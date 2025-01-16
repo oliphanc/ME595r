@@ -4,10 +4,13 @@ import matplotlib.pyplot as plt
 
 # -------- activation functions -------
 def relu(z):
-    # TODO
+    if z < 0:
+        return 0
+    else:
+        return z
 
 def relu_back(xbar, z):
-    # TODO
+    return xbar if z > 0 else 0
 
 identity = lambda z: z
 
@@ -17,17 +20,23 @@ identity_back = lambda xbar, z: xbar
 
 # ---------- initialization -----------
 def glorot(nin, nout):
-   # TODO
+    b = np.zeros((nout, 1))
+    var = 2 / (nin + nout)
+    W = np.random.normal(0, var**.5, (nout, nin))
     return W, b
 # -------------------------------------
 
 
 # -------- loss functions -----------
 def mse(yhat, y):
-    # TODO
+    m = y.size
+    mse = 1/m * np.sum((yhat - y)**2)
+    return mse
 
 def mse_back(yhat, y):
-    # TODO
+    m = yhat.size
+    yhat_bar = 2/m * (yhat - y)
+    return yhat_bar
 # -----------------------------------
 
 
@@ -35,7 +44,9 @@ def mse_back(yhat, y):
 class Layer:
 
     def __init__(self, nin, nout, activation=identity):
-        # TODO: initialize and setup variables
+        # initialize and setup variables
+        self.activation=activation
+        self.W, self.b = glorot(nin, nout)
 
         if activation == relu:
             self.activation_back = relu_back
@@ -43,55 +54,81 @@ class Layer:
             self.activation_back = identity_back
 
         # initialize cache
-        # TODO
+        self.X_cache = np.zeros((nin, 1))
+        self.Z_cache = np.zeros((nout, 1))
+    
+    def __call__(self, X):
+        return self.forward(X)
 
     def forward(self, X, train=True):
-        # TODO
+        Z = self.W @ X + self.b
+        Xnew = self.activation(Z)
 
         # save cache
         if train:
-            # TODO: save cache
-
+            self.X_cache = X
+            self.Z_cache = Z
+            
         return Xnew
 
     def backward(self, Xnewbar):
-        # TODO
+        ZBar = self.activation_back(Xnewbar, self.Z_cache)
+        Xbar = self.W.T @ ZBar
+        self.Wbar = ZBar @ self.X_cache.T
+        self.bbar = np.sum(ZBar, axis=0)
         return Xbar
 
 
 class Network:
 
     def __init__(self, layers, loss):
-        # TODO: initialization
-
+        self.layers = layers
+        self.loss = loss
         if loss == mse:
             self.loss_back = mse_back
 
     def forward(self, X, y, train=True):
-
-        # TODO
-
+        for layer in self.layers:
+            X = layer(X, train=train)
+        yhat = X
+        L = self.loss(yhat, y)
         # save cache
         if train:
-            # TODO
+            self.y = y
+            self.yhat = yhat
 
         return L, yhat
 
     def backward(self):
-
-        # TODO
-
+        yhatbar = self.loss_back(self.yhat, self.y)
+        Xnewbar = yhatbar
+        
+        for layer in reversed(self.layers):
+            Xnewbar = layer.backward(Xnewbar)
 
 
 class GradientDescent:
 
     def __init__(self, alpha):
-        # TODO
+        self.alpha = alpha
 
     def step(self, network):
-        # TODO
+        for layer in network.layers:
+            layer.W -= self.alpha * layer.Wbar
+            layer.b -= self.alpha * layer.bbar
 
 
+if __name__ == "__main__":
+    l1 = Layer(7, 14, activation=relu)
+    l2 = Layer(14, 14, activation=relu)
+    l3 = Layer(14, 1)
+    layers = [l1, l2, l3]
+    model = Network([layers], mse)
+    x1 = np.ones((7, 2))
+    x2 = l1.forward(x1)
+    assert x2.shape == (10, 2)
+
+"""
 if __name__ == '__main__':
 
     # ---------- data preparation ----------------
@@ -193,3 +230,4 @@ if __name__ == '__main__':
     print("avg error (mpg) =", np.mean(np.abs(yhat - ytest)))
 
     plt.show()
+"""
