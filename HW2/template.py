@@ -1,14 +1,24 @@
 import numpy as np
+from numpy import vectorize
 import math
 import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+# get seed
+seed = 1075438609 #np.random.randint(0, 2**31)
+print(f"Random Seed: {seed}")
+np.random.seed(seed)
+
 
 # -------- activation functions -------
+@vectorize
 def relu(z):
     if z < 0:
         return 0
     else:
         return z
 
+@vectorize
 def relu_back(xbar, z):
     return xbar if z > 0 else 0
 
@@ -20,7 +30,7 @@ identity_back = lambda xbar, z: xbar
 
 # ---------- initialization -----------
 def glorot(nin, nout):
-    b = np.zeros((nout, 1))
+    b = np.zeros((nout))
     var = 2 / (nin + nout)
     W = np.random.normal(0, var**.5, (nout, nin))
     return W, b
@@ -57,11 +67,11 @@ class Layer:
         self.X_cache = np.zeros((nin, 1))
         self.Z_cache = np.zeros((nout, 1))
     
-    def __call__(self, X):
-        return self.forward(X)
+    def __call__(self, X, train):
+        return self.forward(X, train)
 
     def forward(self, X, train=True):
-        Z = self.W @ X + self.b
+        Z = ((self.W @ X).T + self.b).T
         Xnew = self.activation(Z)
 
         # save cache
@@ -75,7 +85,7 @@ class Layer:
         ZBar = self.activation_back(Xnewbar, self.Z_cache)
         Xbar = self.W.T @ ZBar
         self.Wbar = ZBar @ self.X_cache.T
-        self.bbar = np.sum(ZBar, axis=0)
+        self.bbar = np.sum(ZBar, axis=1)
         return Xbar
 
 
@@ -118,17 +128,7 @@ class GradientDescent:
             layer.b -= self.alpha * layer.bbar
 
 
-if __name__ == "__main__":
-    l1 = Layer(7, 14, activation=relu)
-    l2 = Layer(14, 14, activation=relu)
-    l3 = Layer(14, 1)
-    layers = [l1, l2, l3]
-    model = Network([layers], mse)
-    x1 = np.ones((7, 2))
-    x2 = l1.forward(x1)
-    assert x2.shape == (10, 2)
 
-"""
 if __name__ == '__main__':
 
     # ---------- data preparation ----------------
@@ -191,20 +191,27 @@ if __name__ == '__main__':
 
     # ------------------------------------------------------------
 
-    l1 = Layer(7, ?, relu)
-    # TODO
+    l1 = Layer(7, 14, relu)
+    l2 = Layer(14, 14, relu)
+    l3 = Layer(14, 1)
+    
     layers = [l1, l2, l3]
     network = Network(layers, mse)
-    alpha = ?
+    alpha = 1e-4
     optimizer = GradientDescent(alpha)
 
     train_losses = []
     test_losses = []
-    epochs = ?
-    for i in range(epochs):
-        # TODO: run train set, backprop, step
+    epochs = 50000
+    for i in tqdm(range(epochs)):
+        # run train set, backprop, step
+        L, _ = network.forward(Xtrain, ytrain)
+        network.backward()
+        optimizer.step(network)
+        train_losses.append(L)
 
-        # TODO: run test set
+        L, _ = network.forward(Xtest, ytest, train=False)
+        test_losses.append(L)
 
 
     # --- inference ----
@@ -221,13 +228,14 @@ if __name__ == '__main__':
     plt.ylabel('Loss')
     plt.title('Training and Testing Losses')
     plt.legend()
-
+    plt.savefig(f"Losses_{epochs}_epochs_{seed}_seed.png")
 
     plt.figure()
     plt.plot(ytest.T, yhat.T, "o")
     plt.plot([10, 45], [10, 45], "--")
+    plt.title("Avg error (mpg) =", np.mean(np.abs(yhat - ytest)))
+    plt.savefig(f"Error_{epochs}_epochs_{seed}_seed.png")
 
     print("avg error (mpg) =", np.mean(np.abs(yhat - ytest)))
 
     plt.show()
-"""
