@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 # get seed
-seed = 1075438609 #np.random.randint(0, 2**31)
+seed = 471123720 #np.random.randint(0, 2**31)
 print(f"Random Seed: {seed}")
 np.random.seed(seed)
 
@@ -197,12 +197,12 @@ if __name__ == '__main__':
     
     layers = [l1, l2, l3]
     network = Network(layers, mse)
-    alpha = 1e-4
+    alpha = 5e-3
     optimizer = GradientDescent(alpha)
 
     train_losses = []
     test_losses = []
-    epochs = 50000
+    epochs = 200
     for i in tqdm(range(epochs)):
         # run train set, backprop, step
         L, _ = network.forward(Xtrain, ytrain)
@@ -228,13 +228,13 @@ if __name__ == '__main__':
     plt.ylabel('Loss')
     plt.title('Training and Testing Losses')
     plt.legend()
-    plt.savefig(f"Losses_{epochs}_epochs_{seed}_seed.png")
+    plt.savefig(f"Losses_{epochs}_epochs_{seed}_seed_{alpha}_LR.png")
 
     plt.figure()
     plt.plot(ytest.T, yhat.T, "o")
     plt.plot([10, 45], [10, 45], "--")
-    plt.title("Avg error (mpg) =", np.mean(np.abs(yhat - ytest)))
-    plt.savefig(f"Error_{epochs}_epochs_{seed}_seed.png")
+    plt.title(f"Avg error (mpg) = {np.mean(np.abs(yhat - ytest))}")
+    plt.savefig(f"Error_{epochs}_epochs_{seed}_seed_{alpha}_LR.png")
 
     print("avg error (mpg) =", np.mean(np.abs(yhat - ytest)))
 
