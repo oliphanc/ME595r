@@ -1,6 +1,5 @@
 import numpy as np
 from numpy import vectorize
-import math
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
