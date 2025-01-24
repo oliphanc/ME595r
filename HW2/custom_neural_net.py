@@ -135,7 +135,7 @@ if __name__ == '__main__':
     numeric_data = []
 
     # Read the text file
-    with open('auto-mpg.data', 'r') as file:
+    with open('data\\auto-mpg.data', 'r') as file:
         for line in file:
             # Split the line into columns
             columns = line.strip().split()
