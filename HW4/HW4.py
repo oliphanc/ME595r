@@ -15,8 +15,14 @@ class PINN(nn.Module):
             layers.append(nn.Tanh())
         layers.append(nn.Linear(width, outputs))
         self.network = nn.Sequential(*layers)
-        self.lambda_1 = nn.Parameter(torch.rand(1))
-        self.lambda_2 = nn.Parameter(torch.rand(1))
+        self.lambda_1 = nn.Parameter(torch.tensor([1.]))
+        self.lambda_2 = nn.Parameter(torch.tensor([.01]))
+
+        def init_weights(m):
+            if isinstance(m, nn.Linear):
+                nn.init.xavier_normal_(m.weight)
+                m.bias.data.fill_(0.01)
+        self.apply(init_weights)
         
     def forward(self, x, t):
         xt = torch.cat([x, t], dim=1)
@@ -35,6 +41,8 @@ def train(X, T, U, model, epochs=1):
     )
     
     losses = []
+    lambda_1_log = []
+    lambda_2_log = []
     
     def closure():
         optimizer.zero_grad()
@@ -44,12 +52,15 @@ def train(X, T, U, model, epochs=1):
         u_t = torch.autograd.grad(u_pred, T, grad_outputs=torch.ones_like(u_pred), create_graph=True)[0]
         u_x = torch.autograd.grad(u_pred, X, grad_outputs=torch.ones_like(u_pred), create_graph=True)[0]
         u_xx = torch.autograd.grad(u_x, X, grad_outputs=torch.ones_like(u_x), create_graph=True)[0]
-        residual =  u_t + model.lambda_1 * u * u_x - model.lambda_2 * u_xx
+        residual =  u_t + model.lambda_1 * u_pred * u_x - model.lambda_2 * u_xx
 
         mse_f = torch.mean(residual**2)
         total_loss = mse_u + mse_f
         total_loss.backward()
         losses.append(total_loss.item())
+        lambda_1_log.append(model.lambda_1.item())
+        lambda_2_log.append(model.lambda_2.item())
+        
         return total_loss
     
     model.train()
@@ -61,19 +72,33 @@ def train(X, T, U, model, epochs=1):
     plt.yscale('log')
     plt.xlabel('Iterations')
     plt.ylabel('Training Loss')
-    
+
+    plt.figure()
+    plt.plot(lambda_1_log)
+    plt.xlabel('Iterations')
+    plt.ylabel(r'$\lambda_1$')
+
+    plt.figure()
+    plt.plot(lambda_2_log)
+    plt.xlabel('Iterations')
+    plt.ylabel(r'$\lambda_2$')
+    plt.show()
+
     return losses
 
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     data_path = Path('data') / 'burgers.txt'
-    x, t, u = torch.tensor(np.genfromtxt(data_path).T, requires_grad=True).double().to(device)
+    x_tensor, t_tensor, u_tensor = torch.tensor(np.genfromtxt(data_path).T, requires_grad=True).double().to(device)
 
-    model = PINN(n_layers=5, width=20).double().to(device)
-    L = train(x.view(-1, 1), t.view(-1, 1), u, model)
+    model = PINN().double().to(device)
+    L = train(x_tensor.view(-1, 1), t_tensor.view(-1, 1), u_tensor, model)
     
-    print(model.lambda_1)
-    print(model.lambda_2)
-    print(L[-1])
-    plt.show(block=False)
+    print("Lambda_1:", model.lambda_1.item())
+    print("Error:", (model.lambda_1.item()-1))
+    print("Lambda_2:", model.lambda_2.item())
+    print("Error:", (model.lambda_2.item() - (.01/np.pi)))
+    print("Final Training Loss:", L[-1])
+
+    
