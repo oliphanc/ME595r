@@ -16,7 +16,7 @@ class PINN(nn.Module):
         self.network = nn.Sequential(*layers)
         
     def forward(self, x, t):
-        xt = torch.cat([x, t], dim=1)  # Proper concatenation
+        xt = torch.cat([x, t], dim=1)
         return self.network(xt)
 
 def u0(x):
@@ -40,7 +40,7 @@ def sample_boundary(n=100):
 def sample_collocation(n=10000):
     sampler = LatinHypercube(d=2, seed=42)
     sample = sampler.random(n=n)
-    scaled = scale(sample, [-1, 0], [1, 1])  # Correct scaling: x∈[-1,1], t∈[0,1]
+    scaled = scale(sample, [-1, 0], [1, 1]) 
     XT = torch.tensor(scaled, dtype=torch.float64)
     return XT[:, 0:1], XT[:, 1:2]
 
