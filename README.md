@@ -13,4 +13,4 @@ Solves the same problem as HW1, but with a custom implementation in pure numpy.
 
 #### HW3
 An implementation of a Physics-Informed Neural Network (PINN). The problem posed in Appendix A of [this](https://doi.org/10.1016/j.jcp.2018.10.045) paper is solved with pytorch.
-The implementation use initial and boundary conditions as well as collocation points for training data. The L-BFGS optimization algorithm is used in training.
+The implementation uses initial and boundary conditions as well as collocation points for training data. The L-BFGS optimization algorithm is used in training.
