@@ -16,7 +16,7 @@ class PINN(nn.Module):
         self.network = nn.Sequential(*layers)
         
     def forward(self, x, t):
-        xt = torch.cat([x, t], dim=1)  # Proper concatenation
+        xt = torch.cat([x, t], dim=1)
         return self.network(xt)
 
 def u0(x):
