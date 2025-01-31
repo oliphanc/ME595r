@@ -84,6 +84,7 @@ def train(Xn, Tn, Un, Xf, Tf, model, epochs=1):
     plt.yscale('log')
     plt.xlabel('Iterations')
     plt.ylabel('Training Loss')
+    plt.savefig(r'HW3\training_loss.png')
     
     return losses
 
@@ -121,6 +122,7 @@ if __name__ == '__main__':
     plt.colorbar(contour, label='u(t, x)')
     plt.xlabel('t')
     plt.ylabel('x')
+    plt.savefig(r'HW3\x_t_contour.png')
 
     plt.figure()
     plt.plot( X.cpu().detach().numpy()[750], 
@@ -128,4 +130,5 @@ if __name__ == '__main__':
               'r-')
     plt.xlabel('x')
     plt.ylabel('u(t, x)')
+    plt.savefig(r'HW3\t_0.75.png')
     plt.show()
