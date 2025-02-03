@@ -46,8 +46,7 @@ def sample_collocation(n=10000):
 
 def f(x, t, model):
     u = model(x, t)
-    u_t = torch.autograd.grad(u, t, grad_outputs=torch.ones_like(u), create_graph=True)[0]
-    u_x = torch.autograd.grad(u, x, grad_outputs=torch.ones_like(u), create_graph=True)[0]
+    u_t, u_x = torch.autograd.grad(u, inputs=(t, x), grad_outputs=torch.ones_like(u), create_graph=True)
     u_xx = torch.autograd.grad(u_x, x, grad_outputs=torch.ones_like(u_x), create_graph=True)[0]
     return u_t + u * u_x - (0.01/np.pi) * u_xx
 
