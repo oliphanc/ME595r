@@ -45,7 +45,7 @@ def train(X, T, U, model, lambda_, epochs=1):
         residual =  u_t + lambda_[0] * u_pred * u_x - lambda_[1] * u_xx
 
         mse_f = torch.mean(residual**2)
-        total_loss = mse_u + (10**epoch)*mse_f
+        total_loss = mse_u + (2**epoch)*mse_f
         total_loss.backward()
         losses.append(total_loss.item())
         lambda_1_log.append(lambda_[0].item())
@@ -86,7 +86,10 @@ if __name__ == "__main__":
     model = PINN().double().to(device)
     lambda_1=nn.Parameter(torch.ones(1, dtype=torch.float64).to(device).requires_grad_())
     lambda_2=nn.Parameter(torch.ones(1, dtype=torch.float64).to(device).requires_grad_())
-    L, lambda_ = train(x_tensor.view(-1, 1), t_tensor.view(-1, 1), u_tensor.view(-1, 1), model, [lambda_1, lambda_2], epochs=2)
+    L, lambda_ = train(x_tensor.view(-1, 1), 
+                       t_tensor.view(-1, 1), 
+                       u_tensor.view(-1, 1), 
+                       model, [lambda_1, lambda_2], epochs=1)
     
     print("Lambda_1:", lambda_[0].item())
     print("Error:", lambda_[0].item()-1)
