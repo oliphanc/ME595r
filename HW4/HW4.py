@@ -97,4 +97,24 @@ if __name__ == "__main__":
     print("Error:", (lambda_[1].item() - (.01/np.pi)))
     print("Final Training Loss:", L[-1])
 
+    x_range = torch.linspace(-1, 1, 1001, dtype=torch.float64)
+    t_range = torch.linspace(0, 1, 1001, dtype=torch.float64)
+    T, X = torch.meshgrid(t_range, x_range)
+    T = T.to(device)
+    X = X.to(device)
+    U = model(X.reshape(-1,1), T.reshape(-1,1))
+    U = U.reshape(X.shape)
+
+    plt.figure(figsize=(10, 4))
+    contour = plt.contourf(T.cpu().detach().numpy(), 
+                           X.cpu().detach().numpy(), 
+                           U.cpu().detach().numpy(), 
+                           levels=100, cmap='RdBu_r')
+    plt.colorbar(contour, label='u(t, x)')
+    plt.xlabel('t')
+    plt.ylabel('x')
+    plt.savefig(r'HW4\x_t_contour.png')
+
+    plt.show()
+
     
