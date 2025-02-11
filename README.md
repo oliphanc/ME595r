@@ -18,3 +18,7 @@ The implementation uses initial and boundary conditions as well as collocation p
 
 #### HW4
 The same problem solved in HW3 is looked at again, but now the PINN is used to solve a PDE inverse problem. The given data is used to determine the coefficients $\lambda_1$ and $\lambda_2$ for the Burgers' Equation.
+
+
+#### HW5
+A basic implementation of a neural ODE to try and predict weather data
