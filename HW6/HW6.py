@@ -98,6 +98,7 @@ def train(encode, decode, NODE, Xtrain, Xtest, t_train, t_test, Xcol, fcol, epoc
 
 
 if __name__ == '__main__':
+    TRAIN = False
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
     nx = 128
@@ -127,7 +128,17 @@ if __name__ == '__main__':
     Xcol = torch.tensor(Xcol, dtype=torch.float64, device=device, requires_grad=True)
     fcol = torch.tensor(fcol, dtype=torch.float64, device=device)
     
-    train(encoder, decoder, NODE, Xtrain, Xtest, t_train, t_test, Xcol, fcol)
+    if TRAIN:
+        train(encoder, decoder, NODE, Xtrain, Xtest, t_train, t_test, Xcol, fcol)
+        torch.save(encoder.state_dict(), r"HW6\encoder.pt")
+        torch.save(decoder.state_dict(), r"HW6\decoder.pt")
+        torch.save(NODE.state_dict(), r"HW6\NODE.pt")
+    
+    else:
+        encoder.load_state_dict(torch.load(r"HW6\encoder.pt", weights_only=True))
+        decoder.load_state_dict(torch.load(r"HW6\decoder.pt", weights_only=True))
+        NODE.load_state_dict(torch.load(r"HW6\NODE.pt", weights_only=True))
+        
 
     Xhat = decoder(NODE(t_test, encoder(Xtest[:, 0, :])))
     Xhat = torch.permute(Xhat, (1,0,2))
