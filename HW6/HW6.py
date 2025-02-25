@@ -47,7 +47,7 @@ def train(encode, decode, NODE, Xtrain, Xtest, t_train, t_test, Xcol, fcol, epoc
     combined_parameters = list(encode.parameters()) + \
                           list(decode.parameters()) + \
                           list(NODE.parameters())
-    optim = torch.optim.Adam(combined_parameters)
+    optim = torch.optim.Adam(combined_parameters, lr=lr)
     loss_func = nn.MSELoss()
     
     train_losses = []
