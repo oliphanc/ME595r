@@ -43,7 +43,7 @@ class NeuralODE(nn.Module):
     def odefunc(self, t, y):
         return self.net(y)
     
-def train(encode, decode, NODE, Xtrain, Xtest, t_train, t_test, Xcol, fcol, epochs=400, lr=1e-4):
+def train(encode, decode, NODE, Xtrain, Xtest, t_train, t_test, Xcol, fcol, epochs=500, lr=1e-3):
     combined_parameters = list(encode.parameters()) + \
                           list(decode.parameters()) + \
                           list(NODE.parameters())
@@ -98,7 +98,7 @@ def train(encode, decode, NODE, Xtrain, Xtest, t_train, t_test, Xcol, fcol, epoc
 
 
 if __name__ == '__main__':
-    TRAIN = False
+    TRAIN = True
     device = torch.device("cuda" if torch.cuda.is_available() else 'cpu')
 
     nx = 128
