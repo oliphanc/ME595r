@@ -21,4 +21,12 @@ The same problem solved in HW3 is looked at again, but now the PINN is used to s
 
 
 #### HW5
-A basic implementation of a neural ODE to try and predict weather data
+A basic implementation of a neural ODE to try and predict weather data.
+
+
+#### HW6
+Used a neural ODE with an autoencoder to predict the latent dynamics of a nonlinear system.
+
+
+#### HW7
+Used a neural network to approximate a koopman operator to linearize a nonlinear dynamic system.
