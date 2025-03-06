@@ -6,7 +6,7 @@ from tqdm import tqdm
 
 class DeepKoopman(nn.Module):
 
-    def __init__(self, layer_widths, activation=nn.SiLU()):
+    def __init__(self, layer_widths, activation=nn.ReLU()):
         super(DeepKoopman, self).__init__()
         n = len(layer_widths)
         layers = []
@@ -33,7 +33,7 @@ class DeepKoopman(nn.Module):
         return xk_1
 
 
-def train(model, Ytrain, Ytest, epochs=3000, autoencoder_epochs=100, lr=1e-3):
+def train(model, Ytrain, Ytest, epochs=5000, autoencoder_epochs=0, lr=5e-4, vary_timesteps=False):
 
     optimizer = torch.optim.Adam(model.parameters(), lr=lr)
     loss_func = nn.MSELoss()
@@ -42,7 +42,7 @@ def train(model, Ytrain, Ytest, epochs=3000, autoencoder_epochs=100, lr=1e-3):
     test_losses = []
     torch.autograd.set_detect_anomaly(True)
     iters = tqdm(range(epochs))
-    max_timestep = 5
+    max_timestep = 49
 
     for epoch in iters:
         model.train()
@@ -50,10 +50,10 @@ def train(model, Ytrain, Ytest, epochs=3000, autoencoder_epochs=100, lr=1e-3):
         encoding = model.encoder(Ytrain)
         total_loss = loss_func(Ytrain, model.decoder(encoding))
     
-
+        
         if epoch > autoencoder_epochs:
 
-            if epoch % 300 == 0:
+            if vary_timesteps and (epoch % (epochs/10) == 0):
                 max_timestep += 5
                 tqdm.write(f"Increasing max timestep to {max_timestep}")
                 # break
@@ -134,17 +134,17 @@ if __name__ == "__main__":
 
     tvec = np.linspace(0, 350, nt)
     Y = np.loadtxt(r'data\kdata.txt').reshape(ntraj, nt, ny)
-    Ytrain = Y[:5, :, :]  # 2048 training trajectories
+    Ytrain = Y[:120, :, :]  # 2048 training trajectories
     Ytest = Y[2048:, :, :]  # 100 testing trajectoreis
 
-    encoder_layers = [ny, 256, 256, 128, nz]
+    encoder_layers = [ny, 256, 256, nz]
 
     model = DeepKoopman(encoder_layers).double().to(device)
     Ytrain_torch = torch.tensor(Ytrain, dtype=torch.float64).to(device)
     Ytest_torch  = torch.tensor(Ytest, dtype=torch.float64).to(device)
     model.load_state_dict(torch.load(r"HW7\model.pt", weights_only=True))
     train(model, Ytrain_torch, Ytest_torch)
-    torch.save(model.state_dict(), r"HW7/model.pt")
+    torch.save(model.state_dict(), r"HW7\model.pt")
     prediction = torch.zeros_like(Ytrain_torch[0], dtype=torch.float64).to(device)
     prediction[0] = Ytrain_torch[0][0]
     with torch.no_grad():
