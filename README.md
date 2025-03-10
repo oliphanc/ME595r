@@ -30,3 +30,7 @@ Used a neural ODE with an autoencoder to predict the latent dynamics of a nonlin
 
 #### HW7
 Used a neural network to approximate a koopman operator to linearize a nonlinear dynamic system.
+
+
+#### HW8
+Used a convolutional neural network to perform super-resolution of fluid flow. See [this](https://doi.org/10.1063/5.0054312) paper for more details. 
