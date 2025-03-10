@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from matplotlib import cm
 import torch
 import torch.nn as nn
-
+from tqdm import tqdm
 
 class CNNSR(nn.Module):
 
@@ -22,7 +22,10 @@ class CNNSR(nn.Module):
         )
 
     def forward(self, uv):
-        return self.net(uv)
+        fbar = self.net(uv)
+
+        return fbar
+    
 
 
 def load_data():
@@ -73,8 +76,66 @@ def ddeta(f, h):
     return torch.cat((dfdy_bot, dfdy_central, dfdy_top), dim=2)
 
 
-def train(model):
-    pass
+def train(model, uv, lr, epochs):
+    global Jinv, dxdxi, dxdeta, dydxi, dydeta, hfx, hfy, ny, nx, h
+    nu=0.01
+
+    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
+    iters = tqdm(range(epochs))
+    losses = []
+
+    model.train()
+    for epoch in iters:
+        uvp = model(uv)
+        u = uvp[:, 0, :, :]
+        v = uvp[:, 1, :, :]
+        p = uvp[:, 2, :, :]
+
+        dudeta = ddeta(u, h)
+        dudxi  = ddxi(u, h)
+        dudx = Jinv * (dudxi * dydeta - dudeta * dydxi)
+        dudy = Jinv * (dudeta * dxdxi - dudxi * dxdeta)
+
+        d2udxdeta = ddeta(dudy, h)
+        d2udxdxi = ddxi(dudy, h)
+        d2udx2 = Jinv * (d2udxdxi * dydeta - d2udxdeta * dydxi)
+        d2udydeta = ddeta(dudx, h)
+        d2udydxi = ddxi(dudy, h)
+        d2udy2 = Jinv * (d2udydeta * dxdxi - d2udydxi * dxdeta)
+        
+        dvdeta = ddeta(v, h)
+        dvdxi  = ddxi(v, h)
+        dvdx = Jinv * (dvdxi * dydeta - dvdeta * dydxi)
+        dvdy = Jinv * (dvdeta * dxdxi - dvdxi * dxdeta)
+        
+        d2vdxdeta = ddeta(dvdy, h)
+        d2vdxdxi = ddxi(dvdy, h)
+        d2vdx2 = Jinv * (d2vdxdxi * dydeta - d2vdxdeta * dydxi)
+        d2vdydeta = ddeta(dvdx, h)
+        d2vdydxi = ddxi(dvdy, h)
+        d2vdy2 = Jinv * (d2vdydeta * dxdxi - d2vdydxi * dxdeta)
+
+        dpdeta = ddeta(uvp[:, 2, :, :], h)
+        dpdxi  = ddxi(uvp[:, 2, :, :], h)
+        dpdx = Jinv * (dpdxi * dydeta - dpdeta * dydxi)
+        dpdy = Jinv * (dpdeta * dxdxi - dpdxi * dxdeta)
+
+        continuity = dudx + dvdy
+
+        x_momentum = u * dudx + v*dudy + dpdx - nu * (d2udx2 + d2udy2)
+        y_momentum = u * dvdx + v*dvdy + dpdy - nu * (d2vdx2 + d2vdy2)
+
+        total_loss = torch.mean(continuity**2) + torch.mean(x_momentum**2) + torch.mean(y_momentum**2)
+
+        optimizer.zero_grad()
+        total_loss.backward()
+        optimizer.step()
+        losses.append(total_loss.item())
+
+        iters.set_description(f"Loss: {losses[-1]:.5f}")
+
+
+
 
     
 
