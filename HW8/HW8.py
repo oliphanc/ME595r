@@ -10,8 +10,8 @@ class CNNSR(nn.Module):
     def __init__(self, channels, size,  kernel, stride, padding, activation):
         super(CNNSR, self).__init__()
 
-        self.net = nn.Sequential(
-            nn.Upsample(size, mode='bicubic'),
+        self.upsampler = nn.Upsample(size, mode='bicubic')
+        self.convolve = nn.Sequential(
             nn.Conv2d(channels, 16, kernel, stride, padding),
             activation,
             nn.Conv2d(16, 32, kernel, stride, padding),
@@ -22,9 +22,24 @@ class CNNSR(nn.Module):
         )
 
     def forward(self, uv):
-        fbar = self.net(uv)
+        upscale = self.upsampler(uv)
+        uvp = self.convolve(upscale)
 
-        return fbar
+        #Boundary Conditions
+        uvp[:, 0, 0, :] = 0
+        uvp[:, 1, 0, :] = 1
+        uvp[:, 2, 0, :] = uvp[:, 2, 1, :]
+
+        uvp[:, 0, :, 0] = uvp[:, 0, :, -1] = 0
+        uvp[:, 1, :, 0] = uvp[:, 1, :, -1] = 0
+        uvp[:, 2, :, 0] = uvp[:, 2, :, 1]
+        uvp[:, 2, :, -1] = uvp[:, 2, :, -2]
+
+        uvp[:, 0, -1, :] = uvp[:, 0, -2, :]
+        uvp[:, 1, -1, :] = uvp[:, 1, -2, :]
+        uvp[:, 2, -1, :] = 0
+
+        return uvp
     
 
 
@@ -87,9 +102,9 @@ def train(model, uv, lr, epochs):
     model.train()
     for epoch in iters:
         uvp = model(uv)
-        u = uvp[:, 0, :, :]
-        v = uvp[:, 1, :, :]
-        p = uvp[:, 2, :, :]
+        u = uvp[:, 0, :, :].unsqueeze(1)
+        v = uvp[:, 1, :, :].unsqueeze(1)
+        p = uvp[:, 2, :, :].unsqueeze(1)
 
         dudeta = ddeta(u, h)
         dudxi  = ddxi(u, h)
@@ -115,8 +130,8 @@ def train(model, uv, lr, epochs):
         d2vdydxi = ddxi(dvdy, h)
         d2vdy2 = Jinv * (d2vdydeta * dxdxi - d2vdydxi * dxdeta)
 
-        dpdeta = ddeta(uvp[:, 2, :, :], h)
-        dpdxi  = ddxi(uvp[:, 2, :, :], h)
+        dpdeta = ddeta(p, h)
+        dpdxi  = ddxi(p, h)
         dpdx = Jinv * (dpdxi * dydeta - dpdeta * dydxi)
         dpdy = Jinv * (dpdeta * dxdxi - dpdxi * dxdeta)
 
@@ -132,10 +147,14 @@ def train(model, uv, lr, epochs):
         optimizer.step()
         losses.append(total_loss.item())
 
-        iters.set_description(f"Loss: {losses[-1]:.5f}")
+        iters.set_description(f"Loss: {losses[-1]:.5e}")
 
 
-
+    plt.figure()
+    plt.plot(losses)
+    plt.yscale('log')
+    plt.savefig(r"HW8\training_loss.png")
+    plt.show()
 
     
 
@@ -145,6 +164,11 @@ if __name__ == '__main__':
     lfx, lfy, lfu, lfv = load_data()
     Jinv, dxdxi, dxdeta, dydxi, dydeta, hfx, hfy, ny, nx, h = load_high_resolution_grid()
     luv = torch.tensor(np.stack([lfu, lfv]), dtype=torch.float64).unsqueeze(0).to(device)
+    Jinv = torch.tensor(Jinv)
+    dxdxi = torch.tensor(dxdxi)
+    dxdeta = torch.tensor(dxdeta)
+    dydxi = torch.tensor(dydxi)
+    dydeta = torch.tensor(dydeta)
 
     channels = 2
     size = (ny, nx)
@@ -154,5 +178,28 @@ if __name__ == '__main__':
     activation = nn.ReLU()
 
     model = CNNSR(channels, size,  kernel, stride, padding, activation).double().to(device)
+
+    # model.load_state_dict(torch.load(r"HW8\model.pt"))
     
-    print(model)
+    train(model, luv, lr=5e-3, epochs=500)
+    # torch.save(model.state_dict(), r"HW8\model.pt")
+    
+    buv = model.upsampler(luv)
+    huvp = model(luv)
+
+    bu = buv[:, 0, :, :].squeeze(0).cpu().detach().numpy()
+    bv = buv[:, 1, :, :].squeeze(0).cpu().detach().numpy()
+
+    hu = huvp[:, 0, :, :].squeeze(0).cpu().detach().numpy()
+    hv = huvp[:, 1, :, :].squeeze(0).cpu().detach().numpy()
+
+    fig, ax = plt.subplots(1, 3, figsize=(16, 6))
+    im = ax[0].pcolormesh(lfx, lfy, np.sqrt(lfu**2 + lfv**2), cmap=cm.coolwarm, vmin=0.0, vmax=1.0)
+    ax[0].set_title("Initial")
+    ax[1].pcolormesh(hfx, hfy, np.sqrt(bu**2 + bv**2), cmap=cm.coolwarm, vmin=0.0, vmax=1.0)
+    ax[1].set_title("Bicubic")
+    ax[2].pcolormesh(hfx, hfy, np.sqrt(hu**2 + hv**2), cmap=cm.coolwarm, vmin=0.0, vmax=1.0)
+    ax[2].set_title("CNN")
+    fig.colorbar(im, ax=ax.ravel().tolist())
+    # plt.savefig(r"HW8\contours.png")
+    plt.show()
