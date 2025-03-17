@@ -201,5 +201,5 @@ if __name__ == '__main__':
     ax[2].pcolormesh(hfx, hfy, np.sqrt(hu**2 + hv**2), cmap=cm.coolwarm, vmin=0.0, vmax=1.0)
     ax[2].set_title("CNN")
     fig.colorbar(im, ax=ax.ravel().tolist())
-    # plt.savefig(r"HW8\contours.png")
+    plt.savefig(r"HW8\contours.png")
     plt.show()
