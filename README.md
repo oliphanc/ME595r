@@ -34,3 +34,7 @@ Used a neural network to approximate a koopman operator to linearize a nonlinear
 
 #### HW8
 Used a convolutional neural network to perform super-resolution of fluid flow. See [this](https://doi.org/10.1063/5.0054312) paper for more details. 
+
+
+#### HW9
+An implementation of a GNN used to predict the acceleration of particles in a spring system. The network is used to to predict the trajectories of the particles.
